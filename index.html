@@ -88,7 +88,7 @@
 
 <script>
 // >>> INCOLLA QUI L'URL DELL'APP WEB DI APPS SCRIPT (finisce con /exec) <<<
-const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbxwbIMshY4OEWyrTRxQafBKCu-ivlSB8eQGop7E9ydFBbLNJLckkp-Qatj16LjFwQ4WXw/exec';
+const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbwv-ywIpSzDq6VEzsEyYomVQq2pOCajleNko4iyNDYorLJDkeAjZTSmQZ20QBbwFIW60w/exec';
 
 // Password: chiesta una volta e ricordata sul telefono
 function chiave() {
@@ -146,7 +146,7 @@ function parla(t, poi) {
     const fine = () => { if (!fatto) { fatto = true; poi(); } };
     u.onend = fine;
     u.onerror = fine;
-    setTimeout(fine, 1500 + t.length * 90); // sicurezza se il telefono non segnala la fine
+    setTimeout(fine, 700 + t.length * 65); // sicurezza se il telefono non segnala la fine
   }
   speechSynthesis.speak(u);
 }
@@ -223,6 +223,13 @@ function dtAscolta() {
       if (e.results[k].isFinal) finale = t;
     }
     $('dtTesto').value = t;
+    // Appena la frase è completa passa subito alla domanda dopo, senza aspettare la chiusura del microfono
+    if (finale.trim()) {
+      const risposta = finale.trim();
+      dtStopAscolto();
+      dVuoti = 0;
+      dtGestisci(risposta);
+    }
   };
   dRec.onerror = e => {
     if (tok !== dToken) return;
