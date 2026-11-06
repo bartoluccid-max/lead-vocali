@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead vocali</title>
+<style>
+  body { font-family: sans-serif; padding: 16px; margin: 0; background: #f4f6f8; }
+  .wrap { max-width: 420px; margin: 0 auto; }
+  button { border: none; border-radius: 14px; color: #fff; font-weight: bold; aspect-ratio: 1 / 1; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+  button:active { transform: scale(.96); }
+  #nuovo { display: block; width: 66%; margin: 0 auto 16px; font-size: 30px; background: #0b8043; }
+  #griglia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .piccolo { font-size: 26px; background: #1a73e8; }
+  #oggi { background: #f29900; font-size: 20px; }
+  #stop { background: #c5221f; font-size: 20px; }
+
+  /* ===== Dettatura Nuovo lead ===== */
+  #dt { display: none; position: fixed; inset: 0; background: #12161c; color: #fff; z-index: 9999; overflow-y: auto; padding: 20px 16px 30px; box-sizing: border-box; }
+  #dtIn { max-width: 460px; margin: 0 auto; }
+  #dtPasso { font-size: 15px; color: #9aa4b2; }
+  #dtDomanda { font-size: 32px; font-weight: bold; margin: 8px 0 18px; line-height: 1.2; }
+  #dtMic { width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 16px; background: #333; display: flex; align-items: center; justify-content: center; font-size: 42px; transition: background .2s; cursor: pointer; }
+  #dtMic.on { background: #c5221f; animation: pulsa 1s infinite; }
+  @keyframes pulsa { 50% { transform: scale(1.08); } }
+  #dtStato { text-align: center; color: #9aa4b2; min-height: 20px; margin-bottom: 10px; }
+  #dtTesto { width: 100%; box-sizing: border-box; font-size: 20px; padding: 14px; border-radius: 12px; border: 0; background: #fff; color: #111; }
+  .dtBtn { display: flex; gap: 10px; margin-top: 14px; }
+  .dtBtn button { flex: 1; aspect-ratio: auto; font-size: 17px; padding: 15px 6px; border-radius: 12px; }
+  .bVerde { background: #0b8043; } .bBlu { background: #1a73e8; } .bRosso { background: #c5221f; } .bGrigio { background: #555; }
+  #dtRiep { margin-top: 18px; font-size: 15px; line-height: 1.5; }
+  #dtRiep b { color: #9aa4b2; font-weight: normal; }
+  #dtComandi { margin-top: 18px; padding: 14px; background: #1e252e; border-radius: 12px; font-size: 15px; line-height: 1.6; color: #cfd6df; }
+  #dtComandi .dtTit { font-weight: bold; color: #fff; margin-bottom: 4px; }
+  #dtComandi span { color: #ffd166; font-weight: bold; }
+  #dtFine { display: none; }
+  #dtFoto { display: none; width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin: 10px auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button id="nuovo">➕<br>Nuovo<br>lead</button>
+  <div id="griglia"></div>
+</div>
+
+<!-- ===== Dettatura Nuovo lead ===== -->
+<div id="dt"><div id="dtIn">
+  <div id="dtDomande">
+    <div id="dtPasso"></div>
+    <div id="dtDomanda"></div>
+    <div id="dtMic" onclick="dtTocca()">🎤</div>
+    <div id="dtStato"></div>
+    <input id="dtTesto" placeholder="Risposta…" autocomplete="off">
+    <div class="dtBtn">
+      <button class="bGrigio" onclick="dtIndietro()">◀ Indietro</button>
+      <button class="bBlu" onclick="dtRipeti()">🔁 Ripeti</button>
+      <button class="bVerde" onclick="dtAvantiManuale()">Avanti ▶</button>
+    </div>
+    <div class="dtBtn">
+      <button class="bRosso" onclick="dtAnnulla()">⏹ Interrompi, non salvare</button>
+    </div>
+    <div id="dtComandi">
+      <div class="dtTit">🗣️ Comandi vocali</div>
+      <div><span>"salta"</span> lascia il campo vuoto</div>
+      <div><span>"indietro"</span> torna alla domanda prima</div>
+      <div><span>"ripeti"</span> rifà la domanda</div>
+      <div><span>"annulla"</span> chiude senza salvare</div>
+      <div class="dtTit" style="margin-top:10px">📅 Follow-up</div>
+      <div>"domani" · "tra 10 giorni" · "lunedì" · "15 dicembre"</div>
+      <div class="dtTit" style="margin-top:10px">✉️ Email</div>
+      <div>"mario punto rossi chiocciola gmail punto com"</div>
+    </div>
+  </div>
+
+  <div id="dtFine">
+    <div id="dtDomanda2" style="font-size:28px;font-weight:bold;margin-bottom:10px"></div>
+    <img id="dtFoto">
+    <div class="dtBtn">
+      <button class="bBlu" onclick="document.getElementById('dtFile').click()">📷 Aggiungi foto</button>
+      <button class="bVerde" onclick="dtVcard()">📇 Salva nei contatti</button>
+    </div>
+    <div class="dtBtn"><button class="bGrigio" onclick="dtChiudi()">Chiudi</button></div>
+    <input id="dtFile" type="file" accept="image/*" capture="environment" style="display:none">
+  </div>
+
+  <div id="dtRiep"></div>
+</div></div>
+
+<script>
+// >>> INCOLLA QUI L'URL DELL'APP WEB DI APPS SCRIPT (finisce con /exec) <<<
+const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbxwbIMshY4OEWyrTRxQafBKCu-ivlSB8eQGop7E9ydFBbLNJLckkp-Qatj16LjFwQ4WXw/exec';
+
+// Password: chiesta una volta e ricordata sul telefono
+function chiave() {
+  let k = '';
+  try { k = localStorage.getItem('leadChiave') || ''; } catch (e) {}
+  if (!k) {
+    k = (prompt('Password dell\'app (la stessa scritta in Code.gs):') || '').trim();
+    try { if (k) localStorage.setItem('leadChiave', k); } catch (e) {}
+  }
+  return k;
+}
+function dimenticaChiave() { try { localStorage.removeItem('leadChiave'); } catch (e) {} }
+
+async function api(azione, dati) {
+  let r;
+  if (azione === 'salva') {
+    r = await fetch(URL_SCRIPT, { method: 'POST', body: JSON.stringify({ chiave: chiave(), lead: dati }) });
+  } else {
+    const q = new URLSearchParams(Object.assign({ azione, chiave: chiave() }, dati));
+    r = await fetch(URL_SCRIPT + '?' + q.toString());
+  }
+  const j = await r.json();
+  if (!j.ok) {
+    if (j.errore === 'Password sbagliata') dimenticaChiave();
+    throw new Error(j.errore);
+  }
+  return j;
+}
+
+const prov = [
+  ['AN','Ancona'], ['MC','Macerata'], ['PU','Pesaro-Urbino'], ['FM','Fermo'],
+  ['AP','Ascoli Piceno'], ['RN','Rimini'], ['PG','Perugia']
+];
+const griglia = document.getElementById('griglia');
+
+function tasto(id, html, azione) {
+  const b = document.createElement('button');
+  b.className = 'piccolo';
+  if (id) b.id = id;
+  b.innerHTML = html;
+  b.onclick = azione;
+  griglia.appendChild(b);
+}
+
+tasto('oggi', 'Lead<br>di oggi', () => leggi('oggi', '', 'oggi'));
+prov.forEach(([sigla, nome]) => tasto(null, sigla, () => leggi('provincia', nome, nome)));
+tasto('stop', '⏹<br>Stop', () => speechSynthesis.cancel());
+
+function parla(t, poi) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t);
+  u.lang = 'it-IT';
+  if (poi) {
+    let fatto = false;
+    const fine = () => { if (!fatto) { fatto = true; poi(); } };
+    u.onend = fine;
+    u.onerror = fine;
+    setTimeout(fine, 1500 + t.length * 90); // sicurezza se il telefono non segnala la fine
+  }
+  speechSynthesis.speak(u);
+}
+
+function leggi(tipo, valore, nome) {
+  parla('Cerco i lead di ' + nome);
+  api('leggi', { tipo, valore })
+    .then(j => { const l = j.dati; parla(l.length ? (l.length === 1 ? "C'è un lead. " : 'Ci sono ' + l.length + ' lead. ') + l.join('. ') : 'Nessun lead per ' + nome); })
+    .catch(e => parla('Errore: ' + e.message));
+}
+
+// ================= DETTATURA NUOVO LEAD =================
+const DOMANDE = [
+  ['Nome', 'Nome?'],
+  ['Cognome', 'Cognome o azienda?'],
+  ['Telefono', 'Telefono?'],
+  ['Email', 'Email?'],
+  ['Provincia', 'Provincia?'],
+  ['Provenienza', 'Provenienza?'],
+  ['Priorità', 'Priorità, da uno a cinque?'],
+  ['Prodotto', 'Prodotto?'],
+  ['Fascia', 'Fascia? Bassa, media o alta'],
+  ['Importo', 'Importo?'],
+  ['Note', 'Note?'],
+  ['Follow-up', 'Quando lo ricontatti?']
+];
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const $ = id => document.getElementById(id);
+let dLead = {}, dI = 0, dRec = null, dToken = 0, dVuoti = 0, dFotoB64 = '', dTastiera = !SR, dMicBloccato = false;
+
+function dtApri() {
+  dLead = {}; dI = 0; dFotoB64 = '';
+  $('dtFoto').style.display = 'none';
+  $('dtDomande').style.display = 'block';
+  $('dtFine').style.display = 'none';
+  $('dtRiep').innerHTML = '';
+  $('dt').style.display = 'block';
+  dtChiedi();
+}
+
+function dtStopAscolto() {
+  dToken++;
+  if (dRec) { try { dRec.abort(); } catch (e) {} dRec = null; }
+  $('dtMic').classList.remove('on');
+}
+
+function dtChiedi() {
+  dtStopAscolto();
+  const [campo, domanda] = DOMANDE[dI];
+  $('dtPasso').textContent = 'Domanda ' + (dI + 1) + ' di ' + DOMANDE.length + ' · dì "salta" per lasciarlo vuoto';
+  $('dtDomanda').textContent = domanda;
+  $('dtTesto').value = dLead[campo] || '';
+  $('dtStato').textContent = '';
+  dtRiepilogo();
+  const tok = dToken;
+  if (dMicBloccato) { parla(domanda); $('dtStato').textContent = 'Tocca 🎤 e rispondi'; return; }
+  parla(domanda, () => { if (tok === dToken) dtAscolta(); });
+}
+
+function dtAscolta() {
+  if (dTastiera) { $('dtStato').textContent = 'Usa il microfono della tastiera e premi Avanti'; return; }
+  const tok = ++dToken;
+  let finale = '';
+  dRec = new SR();
+  dRec.lang = 'it-IT';
+  dRec.interimResults = true;
+  dRec.maxAlternatives = 1;
+  dRec.onstart = () => { $('dtMic').classList.add('on'); $('dtStato').textContent = 'Ti ascolto…'; };
+  dRec.onresult = e => {
+    if (tok !== dToken) return;
+    let t = '';
+    for (let k = 0; k < e.results.length; k++) {
+      t += e.results[k][0].transcript;
+      if (e.results[k].isFinal) finale = t;
+    }
+    $('dtTesto').value = t;
+  };
+  dRec.onerror = e => {
+    if (tok !== dToken) return;
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      dMicBloccato = true;
+      $('dtStato').textContent = 'Microfono bloccato (' + e.error + '): tocca 🎤 oppure usa il microfono della tastiera';
+    } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
+      $('dtStato').textContent = 'Errore microfono: ' + e.error + ' · tocca 🎤 per riprovare';
+    }
+  };
+  dRec.onend = () => {
+    if (tok !== dToken) return;
+    $('dtMic').classList.remove('on');
+    dRec = null;
+    if (dTastiera || dMicBloccato) return;
+    const t = (finale || $('dtTesto').value).trim();
+    if (!t) {
+      if (++dVuoti <= 2) { $('dtStato').textContent = 'Non ho sentito'; dtChiedi(); }
+      else { dVuoti = 0; $('dtStato').textContent = 'Tocca Ripeti oppure scrivi e premi Avanti'; }
+      return;
+    }
+    dVuoti = 0;
+    dtGestisci(t);
+  };
+  try { dRec.start(); } catch (e) { $('dtStato').textContent = 'Errore avvio microfono: ' + e.message + ' · tocca 🎤'; }
+}
+
+// Avvio a mano: un tocco è quello che Chrome vuole per sbloccare il microfono
+function dtTocca() {
+  if (!SR) { $('dtStato').textContent = 'Questo browser non ha il riconoscimento vocale: usa Chrome'; return; }
+  speechSynthesis.cancel();
+  dtStopAscolto();
+  dMicBloccato = false;
+  dVuoti = 0;
+  dtAscolta();
+}
+
+function dtGestisci(t) {
+  const c = t.toLowerCase().replace(/[^a-zàèéìòù ]/g, '').trim();
+  if (['annulla', 'interrompi', 'stop', 'basta'].includes(c)) return dtAnnulla();
+  if (['indietro', 'torna indietro'].includes(c)) return dtIndietro();
+  if (['ripeti', 'ripetere'].includes(c)) return dtChiedi();
+  const campo = DOMANDE[dI][0];
+  const vuoto = ['salta', 'niente', 'nessuno', 'nessuna', 'passa', 'vuoto', 'no'].includes(c);
+  dLead[campo] = vuoto ? '' : dtConverti(campo, t);
+
+  if (campo === 'Cognome' && !dLead.Cognome) {
+    parla('Il cognome o l\'azienda serve per forza', () => dtChiedi());
+    return;
+  }
+  dI++;
+  if (dI < DOMANDE.length) dtChiedi(); else dtSalva();
+}
+
+function dtAvantiManuale() { dtStopAscolto(); dtGestisci($('dtTesto').value.trim() || 'salta'); }
+function dtRipeti() { dVuoti = 0; dtChiedi(); }
+function dtIndietro() { if (dI > 0) dI--; dtChiedi(); }
+function dtAnnulla() { dtStopAscolto(); parla('Inserimento annullato, non ho salvato niente'); $('dt').style.display = 'none'; }
+function dtChiudi() { dtStopAscolto(); speechSynthesis.cancel(); $('dt').style.display = 'none'; }
+$('dtTesto').addEventListener('focus', () => { dtStopAscolto(); $('dtStato').textContent = 'Correggi e premi Avanti'; });
+
+// ----- Conversione delle risposte -----
+const NUM = { zero:0, uno:1, una:1, due:2, tre:3, quattro:4, cinque:5, sei:6, sette:7, otto:8, nove:9, dieci:10 };
+const parolaNumero = t => t.toLowerCase().replace(/\b(zero|uno|una|due|tre|quattro|cinque|sei|sette|otto|nove|dieci)\b/g, m => NUM[m]);
+const maiuscolaIniziale = t => t.charAt(0).toUpperCase() + t.slice(1);
+const PROVINCE = ['ANCONA', 'MACERATA', 'PESARO URBINO', 'FERMO', 'ASCOLI PICENO', 'RIMINI', 'PERUGIA'];
+const SIGLE = { an:'ANCONA', mc:'MACERATA', pu:'PESARO URBINO', fm:'FERMO', ap:'ASCOLI PICENO', rn:'RIMINI', pg:'PERUGIA' };
+const nz = s => String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+
+function dtConverti(campo, t) {
+  t = t.trim();
+  switch (campo) {
+    case 'Nome':
+    case 'Cognome':
+      return t.split(' ').map(maiuscolaIniziale).join(' ');
+    case 'Telefono':
+      return parolaNumero(t).replace(/più/g, '+').replace(/[^\d+]/g, '');
+    case 'Email':
+      return t.toLowerCase()
+        .replace(/\s*(chiocciola|chiocciolina|at)\s*/g, '@')
+        .replace(/\s*(trattino basso|underscore)\s*/g, '_')
+        .replace(/\s*punto\s*/g, '.')
+        .replace(/\s*trattino\s*/g, '-')
+        .replace(/\s+/g, '');
+    case 'Provincia': {
+      const v = nz(t);
+      if (SIGLE[v]) return SIGLE[v];
+      const p = PROVINCE.find(x => nz(x).startsWith(v) || v.startsWith(nz(x).slice(0, 5)));
+      return p || t.toUpperCase();
+    }
+    case 'Provenienza':
+    case 'Note':
+      return maiuscolaIniziale(t);
+    case 'Priorità': {
+      const m = parolaNumero(t).match(/\d/);
+      return m ? String(Math.min(5, Math.max(1, +m[0]))) : '';
+    }
+    case 'Prodotto':
+      return t.toUpperCase();
+    case 'Fascia': {
+      const v = t.toLowerCase();
+      if (/bass|low/.test(v)) return 'Low-end';
+      if (/medi|mid/.test(v)) return 'Mid-end';
+      if (/alt|high/.test(v)) return 'High-end';
+      return t;
+    }
+    case 'Importo': {
+      const n = parolaNumero(t).replace(/\./g, '').replace(/[^\d,]/g, '').replace(',', '.');
+      return n || t;
+    }
+    case 'Follow-up':
+      return dtData(t);
+  }
+  return t;
+}
+
+const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+const GIORNI = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+function dtData(t) {
+  const v = parolaNumero(t);
+  const d = new Date(); d.setHours(0,0,0,0);
+  const iso = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+  if (/dopodomani/.test(v)) { d.setDate(d.getDate() + 2); return iso(d); }
+  if (/domani/.test(v)) { d.setDate(d.getDate() + 1); return iso(d); }
+  if (/oggi/.test(v)) return iso(d);
+  let m = v.match(/tra\s+(\d+)\s+(giorn|settiman|mes)/);
+  if (m) {
+    if (m[2] === 'giorn') d.setDate(d.getDate() + +m[1]);
+    if (m[2] === 'settiman') d.setDate(d.getDate() + 7 * m[1]);
+    if (m[2] === 'mes') d.setMonth(d.getMonth() + +m[1]);
+    return iso(d);
+  }
+  if (/tra una settimana|settimana prossima/.test(v)) { d.setDate(d.getDate() + 7); return iso(d); }
+  if (/tra un mese|mese prossimo/.test(v)) { d.setMonth(d.getMonth() + 1); return iso(d); }
+  const g = GIORNI.findIndex(x => v.includes(x) || v.includes(x.replace('ì', 'i')));
+  if (g >= 0) { let k = (g - d.getDay() + 7) % 7 || 7; d.setDate(d.getDate() + k); return iso(d); }
+  m = v.match(/(\d{1,2})\s*[\/\-]\s*(\d{1,2})(?:\s*[\/\-]\s*(\d{2,4}))?/);
+  if (m) return dtComponi(+m[1], +m[2] - 1, m[3], d, iso);
+  const mi = MESI.findIndex(x => v.includes(x));
+  m = v.match(/(\d{1,2})/);
+  if (mi >= 0 && m) { const a = v.match(/(\d{4})/); return dtComponi(+m[1], mi, a && a[1], d, iso); }
+  return t;
+}
+function dtComponi(gg, mm, aa, oggi, iso) {
+  let anno = aa ? (+aa < 100 ? 2000 + +aa : +aa) : oggi.getFullYear();
+  let x = new Date(anno, mm, gg);
+  if (!aa && x < oggi) x = new Date(anno + 1, mm, gg);
+  return iso(x);
+}
+
+// ----- Riepilogo, salvataggio, biglietto -----
+function dtRiepilogo() {
+  $('dtRiep').innerHTML = DOMANDE.filter(([k]) => dLead[k] !== undefined)
+    .map(([k]) => '<b>' + k + ':</b> ' + (dLead[k] ? String(dLead[k]).replace(/</g, '&lt;') : '—')).join('<br>');
+}
+
+function dtSalva() {
+  dtStopAscolto();
+  dtRiepilogo();
+  $('dtDomande').style.display = 'none';
+  $('dtFine').style.display = 'block';
+  $('dtDomanda2').textContent = 'Salvo il lead…';
+  const lead = Object.assign({}, dLead, { Stato: 'Nuovo' });
+  api('salva', lead)
+    .then(() => {
+      $('dtDomanda2').textContent = '✓ Lead salvato';
+      parla('Lead salvato. Se vuoi, aggiungi la foto e salvalo nei contatti.');
+    })
+    .catch(err => {
+      $('dtDomanda2').textContent = 'Errore: ' + err.message;
+      parla('Errore, il lead non è stato salvato');
+    });
+}
+
+$('dtFile').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const lato = 400, s = Math.min(lato / img.width, lato / img.height, 1);
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    const url = cv.toDataURL('image/jpeg', 0.75);
+    dFotoB64 = url.split(',')[1];
+    $('dtFoto').src = url;
+    $('dtFoto').style.display = 'block';
+  };
+  img.src = URL.createObjectURL(f);
+});
+
+function dtVcard() {
+  const L = dLead, esc = s => String(s || '').replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
+  const righe = [
+    'BEGIN:VCARD', 'VERSION:3.0',
+    'N:' + esc(L.Cognome) + ';' + esc(L.Nome) + ';;;',
+    'FN:' + esc([L.Nome, L.Cognome].filter(Boolean).join(' ')),
+  ];
+  if (L.Telefono) righe.push('TEL;TYPE=CELL:' + L.Telefono);
+  if (L.Email) righe.push('EMAIL;TYPE=INTERNET:' + L.Email);
+  const nota = [L.Prodotto, L.Provincia, L.Note].filter(Boolean).join(' - ');
+  if (nota) righe.push('NOTE:' + esc(nota));
+  if (dFotoB64) righe.push('PHOTO;ENCODING=b;TYPE=JPEG:' + dFotoB64);
+  righe.push('END:VCARD');
+  const blob = new Blob([righe.join('\r\n')], { type: 'text/vcard' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = ((L.Nome || '') + ' ' + (L.Cognome || 'contatto')).trim().replace(/\s+/g, '_') + '.vcf';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+document.getElementById('nuovo').onclick = dtApri;
+</script>
+</body>
+</html>
