@@ -40,7 +40,8 @@
   #listaIn { max-width: 520px; margin: 0 auto; }
   #listaTit { font-size: 34px; font-weight: bold; color: #1a73e8; }
   #listaNum { font-size: 20px; color: #555; margin: 4px 0 14px; }
-  #listaNomi div { font-size: 34px; font-weight: bold; line-height: 1.25; padding: 14px 4px; border-bottom: 2px solid #e3e6ea; }
+  #listaNomi div { font-size: 34px; font-weight: bold; line-height: 1.25; padding: 16px 4px; border-bottom: 3px solid #8a8f98; }
+  #listaNomi div:first-child { border-top: 3px solid #8a8f98; }
   #listaNomi .vuoto { color: #777; font-weight: normal; border: 0; }
   .lBtn { display: flex; gap: 10px; margin-top: 20px; }
   .lBtn button { flex: 1; aspect-ratio: auto; font-size: 24px; padding: 20px 6px; border-radius: 14px; }
@@ -59,7 +60,6 @@
   <div id="listaNum"></div>
   <div id="listaNomi"></div>
   <div class="lBtn">
-    <button class="bBlu" onclick="parla(ultimoTesto)">🔊 Rileggi</button>
     <button class="bGrigio" onclick="chiudiLista()">✕ Chiudi</button>
   </div>
 </div></div>
@@ -183,7 +183,6 @@ function leggi(tipo, valore, nome) {
 }
 
 // ================= ELENCO GRANDE PROVINCIA =================
-let ultimoTesto = '';
 function mostraProvincia(nome) {
   $('listaTit').textContent = nome;
   $('listaNum').textContent = 'Cerco…';
@@ -197,10 +196,8 @@ function mostraProvincia(nome) {
       $('listaNomi').innerHTML = n
         ? j.dati.map(x => '<div>' + String(x).replace(/</g, '&lt;') + '</div>').join('')
         : '<div class="vuoto">Nessun lead da seguire</div>';
-      ultimoTesto = j.testo;
-      parla(j.testo);
     })
-    .catch(e => { $('listaNum').textContent = 'Errore: ' + e.message; ultimoTesto = 'Errore: ' + e.message; parla(ultimoTesto); });
+    .catch(e => { $('listaNum').textContent = 'Errore: ' + e.message; });
 }
 function chiudiLista() { speechSynthesis.cancel(); $('lista').style.display = 'none'; }
 
