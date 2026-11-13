@@ -110,7 +110,10 @@ async function api(azione, dati) {
     const q = new URLSearchParams(Object.assign({ azione, chiave: chiave() }, dati));
     r = await fetch(URL_SCRIPT + '?' + q.toString());
   }
-  const j = await r.json();
+  const testo = await r.text();
+  let j;
+  try { j = JSON.parse(testo); }
+  catch (e) { throw new Error('risposta non valida dal motore: ' + testo.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80)); }
   if (!j.ok) {
     if (j.errore === 'Password sbagliata') dimenticaChiave();
     throw new Error(j.errore);
@@ -394,13 +397,13 @@ function dtSalva() {
   $('dtDomanda2').textContent = 'Salvo il lead…';
   const lead = Object.assign({}, dLead, { Stato: 'Nuovo' });
   api('salva', lead)
-    .then(() => {
-      $('dtDomanda2').textContent = '✓ Lead salvato';
-      parla('Lead salvato. Se vuoi, aggiungi la foto e salvalo nei contatti.');
+    .then(j => {
+      $('dtDomanda2').textContent = '✓ Lead salvato' + (j.riga ? ' (riga ' + j.riga + ')' : '');
+      parla('Lead salvato' + (j.riga ? ' alla riga ' + j.riga : '') + '. Se vuoi, aggiungi la foto e salvalo nei contatti.');
     })
     .catch(err => {
       $('dtDomanda2').textContent = 'Errore: ' + err.message;
-      parla('Errore, il lead non è stato salvato');
+      parla('Errore, il lead non è stato salvato. ' + err.message);
     });
 }
 
