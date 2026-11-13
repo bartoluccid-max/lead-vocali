@@ -34,6 +34,16 @@
   #dtComandi .dtTit { font-weight: bold; color: #fff; margin-bottom: 4px; }
   #dtComandi span { color: #ffd166; font-weight: bold; }
   #dtFine { display: none; }
+
+  /* ===== Elenco grande dei lead di una provincia ===== */
+  #lista { display: none; position: fixed; inset: 0; background: #fff; color: #111; z-index: 9998; overflow-y: auto; padding: 18px 16px 30px; box-sizing: border-box; }
+  #listaIn { max-width: 520px; margin: 0 auto; }
+  #listaTit { font-size: 34px; font-weight: bold; color: #1a73e8; }
+  #listaNum { font-size: 20px; color: #555; margin: 4px 0 14px; }
+  #listaNomi div { font-size: 34px; font-weight: bold; line-height: 1.25; padding: 14px 4px; border-bottom: 2px solid #e3e6ea; }
+  #listaNomi .vuoto { color: #777; font-weight: normal; border: 0; }
+  .lBtn { display: flex; gap: 10px; margin-top: 20px; }
+  .lBtn button { flex: 1; aspect-ratio: auto; font-size: 24px; padding: 20px 6px; border-radius: 14px; }
   #dtFoto { display: none; width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin: 10px auto; }
 </style>
 </head>
@@ -42,6 +52,17 @@
   <button id="nuovo">➕<br>Nuovo<br>lead</button>
   <div id="griglia"></div>
 </div>
+
+<!-- ===== Elenco grande provincia ===== -->
+<div id="lista"><div id="listaIn">
+  <div id="listaTit"></div>
+  <div id="listaNum"></div>
+  <div id="listaNomi"></div>
+  <div class="lBtn">
+    <button class="bBlu" onclick="parla(ultimoTesto)">🔊 Rileggi</button>
+    <button class="bGrigio" onclick="chiudiLista()">✕ Chiudi</button>
+  </div>
+</div></div>
 
 <!-- ===== Dettatura Nuovo lead ===== -->
 <div id="dt"><div id="dtIn">
@@ -88,7 +109,7 @@
 
 <script>
 // >>> INCOLLA QUI L'URL DELL'APP WEB DI APPS SCRIPT (finisce con /exec) <<<
-const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbw3NX1bYHcCwV-aqBSMRxBUfqS_0pdZGMdU8zaO2J1AOsWdP0zY72BNguz8dt-IvnXX/exec';
+const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbzBMuY7ITxScKSYUyJz7tihbZXdrE-xhrHisst4tEwSyKKwbBSn1f_hvUH3-XtZFb12Rw/exec';
 
 // Password: chiesta una volta e ricordata sul telefono
 function chiave() {
@@ -137,7 +158,7 @@ function tasto(id, html, azione) {
 }
 
 tasto('oggi', 'Lead<br>di oggi', () => leggi('oggi', '', 'oggi'));
-prov.forEach(([sigla, nome]) => tasto(null, sigla, () => leggi('provincia', nome, nome)));
+prov.forEach(([sigla, nome]) => tasto(null, sigla, () => mostraProvincia(nome)));
 tasto('stop', '⏹<br>Stop', () => speechSynthesis.cancel());
 
 function parla(t, poi) {
@@ -160,6 +181,28 @@ function leggi(tipo, valore, nome) {
     .then(j => { const l = j.dati; parla(l.length ? (l.length === 1 ? "C'è un lead. " : 'Ci sono ' + l.length + ' lead. ') + l.join('. ') : 'Nessun lead per ' + nome); })
     .catch(e => parla('Errore: ' + e.message));
 }
+
+// ================= ELENCO GRANDE PROVINCIA =================
+let ultimoTesto = '';
+function mostraProvincia(nome) {
+  $('listaTit').textContent = nome;
+  $('listaNum').textContent = 'Cerco…';
+  $('listaNomi').innerHTML = '';
+  $('lista').style.display = 'block';
+  window.scrollTo(0, 0);
+  api('nomi', { valore: nome })
+    .then(j => {
+      const n = j.dati.length;
+      $('listaNum').textContent = n ? (n === 1 ? '1 lead interessante' : n + ' lead interessanti') : '';
+      $('listaNomi').innerHTML = n
+        ? j.dati.map(x => '<div>' + String(x).replace(/</g, '&lt;') + '</div>').join('')
+        : '<div class="vuoto">Nessun lead da seguire</div>';
+      ultimoTesto = j.testo;
+      parla(j.testo);
+    })
+    .catch(e => { $('listaNum').textContent = 'Errore: ' + e.message; ultimoTesto = 'Errore: ' + e.message; parla(ultimoTesto); });
+}
+function chiudiLista() { speechSynthesis.cancel(); $('lista').style.display = 'none'; }
 
 // ================= DETTATURA NUOVO LEAD =================
 const DOMANDE = [
